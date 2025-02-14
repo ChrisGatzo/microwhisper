@@ -4,13 +4,15 @@
 
 ## User settings
 xcuserdata/
+*.xcuserdatad/
 
 ## Xcode Patch
 *.xcodeproj/*
 !*.xcodeproj/project.pbxproj
 !*.xcodeproj/xcshareddata/
 !*.xcworkspace/contents.xcworkspacedata
-**/xcshareddata/WorkspaceSettings.xcsettings
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
 
 ## Build generated
 build/

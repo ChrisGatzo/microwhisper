@@ -1,24 +1,31 @@
-//
-//  ContentView.swift
-//  microwhisper
-//
-//  Created by Chris Gatzonis on 2/10/25.
-//
-
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var viewModel: TranscriptionViewModel
+    
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+            if viewModel.isRecording {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+                    .scaleEffect(1.0 + CGFloat(viewModel.audioLevel))
+                    .animation(.easeInOut(duration: 0.05), value: viewModel.audioLevel)
+                    .padding()
+            }
+            
+            ScrollView {
+                Text(viewModel.transcript)
+                    .padding()
+                    .textSelection(.enabled)  // Enable selectable text
+            }
+            .frame(minWidth: 600, minHeight: 400)
         }
-        .padding()
     }
-}
-
-#Preview {
-    ContentView()
 }

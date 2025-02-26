@@ -150,6 +150,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/local/bin/whisper")
+            // Optionally suppress all Python warnings
+            var env = ProcessInfo.processInfo.environment
+            env["PYTHONWARNINGS"] = "ignore"
+            process.environment = env
             let outputDir = fileURL.deletingLastPathComponent().path
             process.arguments = [
                         fileURL.path,
@@ -157,7 +161,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
                         "--output_format", "txt",
                         "--output_dir", outputDir,
                         "--device", "cpu",  // Force CPU usage
-                        "--no_speech_threshold", "0.6"  // Adjust threshold to reduce false positives
+                        "--no_speech_threshold", "0.6",  // Adjust threshold to reduce false positives
+                         "--fp16", "False"
                     ]
             
             let pipe = Pipe()

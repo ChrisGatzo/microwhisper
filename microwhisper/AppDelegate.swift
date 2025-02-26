@@ -8,13 +8,44 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
     var audioRecorder: AVAudioRecorder?
     var recordedFileURL: URL?
     var meterTimer: Timer?
+    var statusItem: NSStatusItem?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupStatusBarItem()
+        
         // If you're switching to the CGEventTap approach, remove your Carbon hotkey code.
         // Otherwise, start your hotkey handler as before.
         // For example, if using CGEventTap:
         let keyTapHandler = KeyTapHandler()
         keyTapHandler.startListening(with: self)
+    }
+    
+    func setupStatusBarItem() {
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Microwhisper")
+        }
+        
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Start Recording", action: #selector(menuStartRecording), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Stop Recording", action: #selector(menuStopRecording), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        
+        statusItem?.menu = menu
+    }
+    
+    @objc func menuStartRecording() {
+        if !isRecording {
+            startRecording()
+        }
+    }
+    
+    @objc func menuStopRecording() {
+        if isRecording {
+            stopRecording()
+        }
     }
     
     func toggleRecording() {
@@ -43,6 +74,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
             audioRecorder?.isMeteringEnabled = true
             audioRecorder?.record()
             isRecording = true
+            
+            // Update status bar icon and menu items
+            if let button = statusItem?.button {
+                button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Recording")
+            }
+            updateMenuItems()
+            
             DispatchQueue.main.async {
                 self.viewModel.appendTranscript("\nRecording started...")
                 self.viewModel.isRecording = true
@@ -63,7 +101,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
                 let level = max(0, min(1, (power + 50) / 50))
                 DispatchQueue.main.async {
                     self.viewModel.audioLevel = level
-                    print("Audio level: \(level)")  // Debug: Print current level
                 }
             })
         } catch {
@@ -78,11 +115,33 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
         meterTimer?.invalidate()
         meterTimer = nil
         isRecording = false
+        
+        // Update status bar icon and menu items
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Microwhisper")
+        }
+        updateMenuItems()
+        
         DispatchQueue.main.async {
             self.viewModel.appendTranscript("\nRecording stopped. Transcribing...")
             self.viewModel.isRecording = false
         }
         transcribeAudio(fileURL: recordedFileURL!)
+    }
+    
+    private func updateMenuItems() {
+        if let menu = statusItem?.menu {
+            menu.items.forEach { item in
+                switch item.title {
+                case "Start Recording":
+                    item.isEnabled = !isRecording
+                case "Stop Recording":
+                    item.isEnabled = isRecording
+                default:
+                    break
+                }
+            }
+        }
     }
     
     func transcribeAudio(fileURL: URL) {

@@ -121,10 +121,7 @@ struct ContentView: View {
                     // Recording controls
                     if !viewModel.isRecording {
                         Button(action: {
-                            // Get reference to AppDelegate to toggle recording
-                            if let appDelegate = NSApplication.shared.delegate as? AppDelegate {
-                                appDelegate.toggleRecording()
-                            }
+                            viewModel.toggleRecording()
                         }) {
                             ZStack {
                                 Circle()

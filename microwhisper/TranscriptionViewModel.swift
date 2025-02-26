@@ -13,6 +13,11 @@ class TranscriptionViewModel: ObservableObject {
     @Published var isRecording: Bool = false
     @Published var audioLevel: Float = 0
     @Published var showTranscript: Bool = false
+    weak var appDelegate: AppDelegate?
+    
+    func toggleRecording() {
+        appDelegate?.toggleRecording()
+    }
     
     func appendTranscript(_ text: String) {
         if transcript.isEmpty {

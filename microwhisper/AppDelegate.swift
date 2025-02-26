@@ -11,6 +11,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
     var statusItem: NSStatusItem?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        viewModel.appDelegate = self
         setupStatusBarItem()
         
         // If you're switching to the CGEventTap approach, remove your Carbon hotkey code.

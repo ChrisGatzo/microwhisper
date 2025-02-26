@@ -29,9 +29,9 @@ class TranscriptionViewModel: ObservableObject {
     }
     
     func clearTranscriptIfNeeded() {
-        // Optionally clear transcript when starting a new recording session
-        // Uncomment if you want to clear previous transcripts on new recording
-        // transcript = ""
+        // Clear transcript when starting a new recording session
+        transcript = ""
+        showTranscript = false
     }
     
     func copyTranscriptToPasteboard() {

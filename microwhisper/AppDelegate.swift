@@ -83,7 +83,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
             updateMenuItems()
             
             DispatchQueue.main.async {
-                self.viewModel.appendTranscript("\nRecording started...")
+                self.viewModel.clearTranscriptIfNeeded()
+                self.viewModel.appendTranscript("Recording started...")
                 self.viewModel.isRecording = true
             }
             

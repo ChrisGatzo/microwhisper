@@ -11,11 +11,24 @@ import SwiftUI
 struct MicrowhisperApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
+    init() {
+        NSWindow.allowsAutomaticWindowTabbing = false
+        DispatchQueue.main.async {
+            NSApplication.shared.windows.forEach { window in
+                window.titlebarAppearsTransparent = true
+                window.titleVisibility = .hidden
+                window.backgroundColor = .clear
+            }
+        }
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(appDelegate.viewModel)
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowToolbarStyle(.unified(showsTitle: false))
     }
 }
 

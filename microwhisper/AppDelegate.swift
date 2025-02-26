@@ -10,7 +10,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
     var meterTimer: Timer?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // If you’re switching to the CGEventTap approach, remove your Carbon hotkey code.
+        // If you're switching to the CGEventTap approach, remove your Carbon hotkey code.
         // Otherwise, start your hotkey handler as before.
         // For example, if using CGEventTap:
         let keyTapHandler = KeyTapHandler()
@@ -94,7 +94,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
                         fileURL.path,
                         "--model", "tiny.en",
                         "--output_format", "txt",
-                        "--output_dir", outputDir
+                        "--output_dir", outputDir,
+                        "--device", "cpu",  // Force CPU usage
+                        "--no_speech_threshold", "0.6"  // Adjust threshold to reduce false positives
                     ]
             
             let pipe = Pipe()

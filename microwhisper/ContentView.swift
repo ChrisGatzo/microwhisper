@@ -119,24 +119,30 @@ struct ContentView: View {
                     Spacer()
                     
                     // Recording controls
-                    if !viewModel.isRecording {
-                        Button(action: {
-                            viewModel.toggleRecording()
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(NSColor.controlBackgroundColor).opacity(0.8))
-                                    .frame(width: 50, height: 50)
-                                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
-                                
+                    Button(action: {
+                        viewModel.toggleRecording()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(NSColor.controlBackgroundColor).opacity(0.8))
+                                .frame(width: 50, height: 50)
+                                .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                            
+                            if viewModel.isRecording {
+                                // Stop button (square)
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.red)
+                                    .frame(width: 20, height: 20)
+                            } else {
+                                // Record button (circle)
                                 Circle()
                                     .fill(Color.red)
                                     .frame(width: 20, height: 20)
                             }
                         }
-                        .buttonStyle(PlainButtonStyle())
-                        .help("Start recording")
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .help(viewModel.isRecording ? "Stop recording" : "Start recording")
                 }
                 .padding(.bottom, 40)
             }

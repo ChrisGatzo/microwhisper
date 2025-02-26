@@ -66,14 +66,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
             AVFormatIDKey: kAudioFormatMPEG4AAC,
             AVSampleRateKey: 16000,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue,  // Lower quality to reduce file size
+            AVEncoderBitRateKey: 32000,  // 32kbps is sufficient for speech
+            AVLinearPCMBitDepthKey: 16   // 16-bit audio is sufficient
         ]
         
         do {
             audioRecorder = try AVAudioRecorder(url: recordedFileURL!, settings: settings)
             audioRecorder?.delegate = self
             audioRecorder?.isMeteringEnabled = true
-            audioRecorder?.record()
+            
+            // Set maximum duration to slightly over 1 hour (in seconds)
+            audioRecorder?.record(forDuration: 3700) // 1 hour + 100 seconds buffer
+            
             isRecording = true
             
             // Update status bar icon and menu items
@@ -150,41 +155,98 @@ class AppDelegate: NSObject, NSApplicationDelegate, AVAudioRecorderDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/local/bin/whisper")
+            
             // Optionally suppress all Python warnings
             var env = ProcessInfo.processInfo.environment
             env["PYTHONWARNINGS"] = "ignore"
             process.environment = env
+            
             let outputDir = fileURL.deletingLastPathComponent().path
             process.arguments = [
                         fileURL.path,
-                        "--model", "tiny.en",
+                        "--model", "base.en",
                         "--output_format", "txt",
                         "--output_dir", outputDir,
-                        "--device", "cpu",  // Force CPU usage
-                        "--no_speech_threshold", "0.6",  // Adjust threshold to reduce false positives
-                         "--fp16", "False"
+                        "--device", "cpu",
+                        "--no_speech_threshold", "0.6",
+                        "--fp16", "False",
+                        "--threads", String(ProcessInfo.processInfo.processorCount),
+                        "--beam_size", "1",
+                        "--best_of", "1",
+                        "--condition_on_previous_text", "False",
+                        "--temperature", "0.0",
+                        "--initial_prompt", "Transcript:",
+                        "--task", "transcribe",            // Force transcribe task
+                        "--language", "en"                 // Force English language
                     ]
             
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = pipe
             
+            DispatchQueue.main.async {
+                self.viewModel.appendTranscript("\nStarting transcription (this may take a while for long recordings)...")
+            }
+            
             do {
                 try process.run()
+                
+                // Set up a timer to check if process is still running and update UI
+                var dots = 0
+                let progressTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] timer in
+                    guard let self = self else {
+                        timer.invalidate()
+                        return
+                    }
+                    
+                    dots = (dots + 1) % 4
+                    let progressDots = String(repeating: ".", count: dots)
+                    DispatchQueue.main.async {
+                        // Update the last line of transcript with progress
+                        let lines = self.viewModel.transcript.components(separatedBy: "\n")
+                        if var lastLine = lines.last, lastLine.contains("transcription") {
+                            lastLine = "Processing transcription\(progressDots)"
+                            var newTranscript = lines.dropLast().joined(separator: "\n")
+                            if !newTranscript.isEmpty {
+                                newTranscript += "\n"
+                            }
+                            newTranscript += lastLine
+                            self.viewModel.transcript = newTranscript
+                        }
+                    }
+                }
+                
+                process.waitUntilExit()
+                progressTimer.invalidate()
+                
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                if let output = String(data: data, encoding: .utf8), !output.isEmpty {
+                    DispatchQueue.main.async {
+                        self.viewModel.appendTranscript("\nTranscription complete:\n\(output)")
+                    }
+                } else {
+                    // Check for the output file directly
+                    let outputFile = (fileURL.deletingPathExtension().path + ".txt")
+                    if let transcription = try? String(contentsOfFile: outputFile, encoding: .utf8) {
+                        DispatchQueue.main.async {
+                            self.viewModel.appendTranscript("\nTranscription complete:\n\(transcription)")
+                        }
+                        // Clean up the output file
+                        try? FileManager.default.removeItem(atPath: outputFile)
+                    } else {
+                        DispatchQueue.main.async {
+                            self.viewModel.appendTranscript("\nNo transcription output available.")
+                        }
+                    }
+                }
             } catch {
                 DispatchQueue.main.async {
                     self.viewModel.appendTranscript("\nError running transcription: \(error)")
                 }
-                return
             }
             
-            process.waitUntilExit()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            let output = String(data: data, encoding: .utf8) ?? "No transcription output."
-            
-            DispatchQueue.main.async {
-                self.viewModel.appendTranscript("\nTranscription:\n\(output)")
-            }
+            // Clean up the audio file
+            try? FileManager.default.removeItem(at: fileURL)
         }
     }
 }

@@ -120,6 +120,70 @@ struct ContentView: View {
                         
                         Spacer(minLength: 20)
                         
+                        // Audio source selector
+                        if !viewModel.isRecording {
+                            VStack(spacing: 10) {
+                                Text("Audio Source")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                
+                                HStack(spacing: 15) {
+                                    // Microphone button
+                                    Button(action: {
+                                        viewModel.selectedAudioSource = .microphone
+                                    }) {
+                                        VStack(spacing: 5) {
+                                            Image(systemName: "mic")
+                                                .font(.system(size: 18))
+                                                .foregroundColor(viewModel.selectedAudioSource == .microphone ? .blue : .secondary)
+                                            
+                                            Text("Microphone")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(viewModel.selectedAudioSource == .microphone ? .blue : .secondary)
+                                        }
+                                        .frame(width: 100, height: 60)
+                                        .background(viewModel.selectedAudioSource == .microphone ? 
+                                                  Color.blue.opacity(0.1) : Color.clear)
+                                        .cornerRadius(8)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .disabled(!viewModel.isMicrophoneAvailable)
+                                    .opacity(viewModel.isMicrophoneAvailable ? 1.0 : 0.5)
+                                    
+                                    // System Audio button
+                                    Button(action: {
+                                        viewModel.selectedAudioSource = .systemAudio
+                                    }) {
+                                        VStack(spacing: 5) {
+                                            Image(systemName: "speaker.wave.3")
+                                                .font(.system(size: 18))
+                                                .foregroundColor(viewModel.selectedAudioSource == .systemAudio ? .blue : .secondary)
+                                            
+                                            Text("System Audio")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(viewModel.selectedAudioSource == .systemAudio ? .blue : .secondary)
+                                        }
+                                        .frame(width: 100, height: 60)
+                                        .background(viewModel.selectedAudioSource == .systemAudio ? 
+                                                  Color.blue.opacity(0.1) : Color.clear)
+                                        .cornerRadius(8)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .disabled(!viewModel.isBlackholeAvailable)
+                                    .opacity(viewModel.isBlackholeAvailable ? 1.0 : 0.5)
+                                    .help(viewModel.isBlackholeAvailable ? "Record system audio using BlackHole" : "BlackHole not detected. Please install BlackHole to record system audio.")
+                                }
+                                
+                                if !viewModel.isBlackholeAvailable {
+                                    Text("BlackHole not detected")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 5)
+                                }
+                            }
+                            .padding(.bottom, 20)
+                        }
+                        
                         // Recording controls
                         Button(action: {
                             viewModel.toggleRecording()
@@ -146,6 +210,20 @@ struct ContentView: View {
                         .buttonStyle(PlainButtonStyle())
                         .help(viewModel.isRecording ? "Stop recording" : "Start recording")
                         .padding(.bottom, 20)
+                        
+                        // Show current audio source during recording
+                        if viewModel.isRecording {
+                            HStack(spacing: 5) {
+                                Image(systemName: viewModel.selectedAudioSource == .microphone ? "mic" : "speaker.wave.3")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                
+                                Text("Recording from \(viewModel.selectedAudioSource == .microphone ? "Microphone" : "System Audio")")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(.bottom, 10)
+                        }
                     }
                 }
             }

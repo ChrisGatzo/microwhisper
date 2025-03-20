@@ -13,6 +13,12 @@ class TranscriptionViewModel: ObservableObject {
     @Published var isRecording: Bool = false
     @Published var audioLevel: Float = 0
     @Published var showTranscript: Bool = false
+    
+    // Audio source properties
+    @Published var selectedAudioSource: AudioRecorderManager.AudioSource = .microphone
+    @Published var isBlackholeAvailable: Bool = false
+    @Published var isMicrophoneAvailable: Bool = true
+    
     weak var appDelegate: AppDelegate?
     
     func toggleRecording() {

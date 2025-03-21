@@ -14,6 +14,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupDelegates()
         
+        // Initialize UI state
+        updateSelectedAudioSource(.microphone)
+        
+        // Detect audio devices
+        audioManager.detectAudioDevices()
+        
         // Start key tap handler
         let keyTapHandler = KeyTapHandler()
         keyTapHandler.startListening(with: self)
@@ -24,6 +30,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         audioManager.delegate = self
         statusBarManager.delegate = self
         transcriptionManager.delegate = self
+    }
+    
+    // Method to handle audio source selection
+    func updateSelectedAudioSource(_ source: AudioRecorderManager.AudioSource) {
+        // Ensure the AudioRecorderManager knows about the change
+        audioManager.detectAudioDevices()
+        
+        // Update the status bar menu to reflect the change
+        switch source {
+        case .microphone:
+            statusBarManager.updateSourceMenuState(selectedSource: "Microphone")
+            print("UI updated for microphone source selection")
+        case .systemAudio:
+            statusBarManager.updateSourceMenuState(selectedSource: "System Audio (BlackHole)")
+            print("UI updated for system audio source selection")
+        default:
+            break
+        }
+        
+        // Force the view model to update its UI
+        DispatchQueue.main.async {
+            // This will trigger SwiftUI to refresh the view
+            self.viewModel.objectWillChange.send()
+        }
     }
 }
 
@@ -38,11 +68,17 @@ extension AppDelegate: StatusBarManagerDelegate {
     }
     
     func statusBarManagerDidRequestStartRecordingFromMicrophone() {
+        viewModel.selectedAudioSource = .microphone
         startRecording(from: .microphone)
     }
     
     func statusBarManagerDidRequestStartRecordingFromSystemAudio() {
+        viewModel.selectedAudioSource = .systemAudio
         startRecording(from: .systemAudio)
+    }
+    
+    func statusBarManagerDidSelectAudioSource(_ source: AudioRecorderManager.AudioSource) {
+        viewModel.selectedAudioSource = source
     }
     
     private func startRecording(from source: AudioRecorderManager.AudioSource) {

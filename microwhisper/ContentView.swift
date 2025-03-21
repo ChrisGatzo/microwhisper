@@ -129,9 +129,17 @@ struct ContentView: View {
                                 
                                 HStack(spacing: 15) {
                                     // Microphone button
-                                    Button(action: {
-                                        viewModel.selectedAudioSource = .microphone
-                                    }) {
+                                    ZStack {
+                                        // Background and border
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(viewModel.selectedAudioSource == .microphone ? Color.blue.opacity(0.2) : Color.clear)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(viewModel.selectedAudioSource == .microphone ? Color.blue : Color.clear, lineWidth: 1)
+                                            )
+                                            .frame(width: 100, height: 60)
+                                        
+                                        // Content
                                         VStack(spacing: 5) {
                                             Image(systemName: "mic")
                                                 .font(.system(size: 18))
@@ -141,19 +149,26 @@ struct ContentView: View {
                                                 .font(.system(size: 12))
                                                 .foregroundColor(viewModel.selectedAudioSource == .microphone ? .blue : .secondary)
                                         }
-                                        .frame(width: 100, height: 60)
-                                        .background(viewModel.selectedAudioSource == .microphone ? 
-                                                  Color.blue.opacity(0.1) : Color.clear)
-                                        .cornerRadius(8)
                                     }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .disabled(!viewModel.isMicrophoneAvailable)
-                                    .opacity(viewModel.isMicrophoneAvailable ? 1.0 : 0.5)
+                                    .contentShape(Rectangle()) // Make entire area tappable
+                                    .onTapGesture {
+                                        viewModel.selectedAudioSource = .microphone
+                                    }
+                                    // Always enable the microphone button since we want to allow switching back
+                                    .opacity(viewModel.isMicrophoneAvailable ? 1.0 : 0.6)
                                     
                                     // System Audio button
-                                    Button(action: {
-                                        viewModel.selectedAudioSource = .systemAudio
-                                    }) {
+                                    ZStack {
+                                        // Background and border
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(viewModel.selectedAudioSource == .systemAudio ? Color.blue.opacity(0.2) : Color.clear)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(viewModel.selectedAudioSource == .systemAudio ? Color.blue : Color.clear, lineWidth: 1)
+                                            )
+                                            .frame(width: 100, height: 60)
+                                        
+                                        // Content
                                         VStack(spacing: 5) {
                                             Image(systemName: "speaker.wave.3")
                                                 .font(.system(size: 18))
@@ -163,12 +178,13 @@ struct ContentView: View {
                                                 .font(.system(size: 12))
                                                 .foregroundColor(viewModel.selectedAudioSource == .systemAudio ? .blue : .secondary)
                                         }
-                                        .frame(width: 100, height: 60)
-                                        .background(viewModel.selectedAudioSource == .systemAudio ? 
-                                                  Color.blue.opacity(0.1) : Color.clear)
-                                        .cornerRadius(8)
                                     }
-                                    .buttonStyle(PlainButtonStyle())
+                                    .contentShape(Rectangle()) // Make entire area tappable
+                                    .onTapGesture {
+                                        if viewModel.isBlackholeAvailable {
+                                            viewModel.selectedAudioSource = .systemAudio
+                                        }
+                                    }
                                     .disabled(!viewModel.isBlackholeAvailable)
                                     .opacity(viewModel.isBlackholeAvailable ? 1.0 : 0.5)
                                     .help(viewModel.isBlackholeAvailable ? "Record system audio using BlackHole" : "BlackHole not detected. Please install BlackHole to record system audio.")

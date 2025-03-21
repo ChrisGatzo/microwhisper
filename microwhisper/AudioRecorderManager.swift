@@ -117,7 +117,9 @@ class AudioRecorderManager: NSObject, AVAudioRecorderDelegate {
         
         switch source {
         case .microphone:
+            // Always allow switching to microphone, using default input device
             deviceID = defaultInputDeviceID
+            print("Switching to microphone input: ID \(deviceID)")
             
         case .systemAudio:
             guard let blackholeID = blackholeDeviceID, isBlackholeAvailable else {
@@ -126,6 +128,7 @@ class AudioRecorderManager: NSObject, AVAudioRecorderDelegate {
                               userInfo: [NSLocalizedDescriptionKey: "BlackHole audio device not available"])
             }
             deviceID = blackholeID
+            print("Switching to system audio input: ID \(deviceID)")
             
         case .both:
             throw NSError(domain: "AudioRecorderManager", 
@@ -258,8 +261,8 @@ class AudioRecorderManager: NSObject, AVAudioRecorderDelegate {
             defaultInputDeviceID = defaultDeviceID
         }
         
-        // Check each device
-        var foundBlackhole = false
+        // Check each device for BlackHole
+        var blackholeFound = false
         
         for deviceID in deviceIDs {
             // Get device name
@@ -278,64 +281,20 @@ class AudioRecorderManager: NSObject, AVAudioRecorderDelegate {
             if result == noErr, let cfName = deviceName?.takeRetainedValue() {
                 let name = cfName as String
                 if name.contains(blackholeDeviceName) {
-                    foundBlackhole = true
-                    blackholeDeviceID = deviceID
-                }
-            }
-        }
-        
-        isBlackholeAvailable = foundBlackhole
-        updateDeviceAvailability(microphoneAvailable: true, blackholeAvailable: foundBlackhole)
-
-        var blackholeFound = false
-        var microphoneFound = false
-        
-        for deviceID in deviceIDs {
-            // Get device name
-            var deviceNameProperty = AudioObjectPropertyAddress(
-                mSelector: kAudioDevicePropertyDeviceNameCFString,
-                mScope: kAudioObjectPropertyScopeGlobal,
-                mElement: kAudioObjectPropertyElementMain
-            )
-            
-            var deviceName: CFString? = nil
-            var deviceNameSize = UInt32(MemoryLayout<CFString?>.size)
-            
-            result = AudioObjectGetPropertyData(
-                deviceID,
-                &deviceNameProperty,
-                0,
-                nil,
-                &deviceNameSize,
-                &deviceName
-            )
-            
-            if result == noErr, let name = deviceName as String? {
-                // Check if this is a BlackHole device
-                if name.contains(blackholeDeviceName) {
                     blackholeFound = true
                     blackholeDeviceID = deviceID
-                }
-                
-                // Check if this is a microphone
-                var inputChannels: UInt32 = 0
-                var propertySize = UInt32(MemoryLayout<UInt32>.size)
-                var inputChannelsProperty = AudioObjectPropertyAddress(
-                    mSelector: kAudioDevicePropertyStreamConfiguration,
-                    mScope: kAudioDevicePropertyScopeInput,
-                    mElement: kAudioObjectPropertyElementMain
-                )
-                
-                if AudioObjectGetPropertyData(deviceID, &inputChannelsProperty, 0, nil, &propertySize, &inputChannels) == noErr {
-                    if inputChannels > 0 && !name.contains(blackholeDeviceName) {
-                        microphoneFound = true
-                    }
+                    break // Found what we need, exit the loop
                 }
             }
         }
         
-        updateDeviceAvailability(microphoneAvailable: microphoneFound, blackholeAvailable: blackholeFound)
+        // Always consider microphone available - we want users to be able to 
+        // switch back to microphone even if none is detected
+        let microphoneAlwaysAvailable = true
+        
+        // Update state and notify delegate
         isBlackholeAvailable = blackholeFound
+        updateDeviceAvailability(microphoneAvailable: microphoneAlwaysAvailable, blackholeAvailable: blackholeFound)
     }
     
     private func updateDeviceAvailability(microphoneAvailable: Bool, blackholeAvailable: Bool) {

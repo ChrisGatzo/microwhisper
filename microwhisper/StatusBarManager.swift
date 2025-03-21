@@ -5,6 +5,7 @@ protocol StatusBarManagerDelegate: AnyObject {
     func statusBarManagerDidRequestStopRecording()
     func statusBarManagerDidRequestStartRecordingFromMicrophone()
     func statusBarManagerDidRequestStartRecordingFromSystemAudio()
+    func statusBarManagerDidSelectAudioSource(_ source: AudioRecorderManager.AudioSource)
 }
 
 class StatusBarManager: NSObject {
@@ -92,11 +93,20 @@ class StatusBarManager: NSObject {
                 if let systemAudioItem = sourceSubmenu.items.first(where: { $0.title == "System Audio (BlackHole)" }) {
                     systemAudioItem.isEnabled = blackholeAvailable
                 }
+                
+                // Ensure microphone item is enabled
+                if let microphoneItem = sourceSubmenu.items.first(where: { $0.title == "Microphone" }) {
+                    microphoneItem.isEnabled = microphoneAvailable
+                }
             }
             
             // Update quick action items
             if let recordSystemItem = menu.items.first(where: { $0.title == "Record from System Audio" }) {
                 recordSystemItem.isEnabled = blackholeAvailable
+            }
+            
+            if let recordMicItem = menu.items.first(where: { $0.title == "Record from Microphone" }) {
+                recordMicItem.isEnabled = microphoneAvailable
             }
         }
     }
@@ -130,10 +140,12 @@ class StatusBarManager: NSObject {
     
     @objc private func menuSelectMicrophone() {
         updateSourceMenuState(selectedSource: "Microphone")
+        delegate?.statusBarManagerDidSelectAudioSource(.microphone)
     }
     
     @objc private func menuSelectSystemAudio() {
         updateSourceMenuState(selectedSource: "System Audio (BlackHole)")
+        delegate?.statusBarManagerDidSelectAudioSource(.systemAudio)
     }
     
     @objc private func menuRecordFromMicrophone() {
@@ -144,7 +156,7 @@ class StatusBarManager: NSObject {
         delegate?.statusBarManagerDidRequestStartRecordingFromSystemAudio()
     }
     
-    private func updateSourceMenuState(selectedSource: String) {
+    func updateSourceMenuState(selectedSource: String) {
         if let menu = statusItem?.menu,
            let sourceItem = menu.items.first(where: { $0.title == "Audio Source" }),
            let sourceSubmenu = sourceItem.submenu {
